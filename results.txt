@@ -1,0 +1,109 @@
+Training...
+
+- mu 0
+- sigma 0.1
+- EPOCHS 5 more the better, but achieving > 98% is a proof
+- BATCH SIZE 256 best results with 256 on my computer
+- DROPOUT 0.75 used for keep_prob
+
+100%|██████████| 31/31 [00:03<00:00,  9.63it/s]
+EPOCH 1 ... Validation Accuracy = 0.306
+
+100%|██████████| 31/31 [00:02<00:00, 10.84it/s]
+EPOCH 5 ... Validation Accuracy = 0.644
+
+Training for 5 epochs and 256 batch size took 167.2 seconds
+
+
+
+Training...
+- mu 0
+- sigma 0.1
+- EPOCHS 10 more the better, but achieving > 98% is a proof
+- BATCH SIZE 128 best results with 256 on my computer
+- DROPOUT 0.75 used for keep_prob
+
+100%|██████████| 62/62 [00:03<00:00, 18.21it/s]
+EPOCH 1 ... Validation Accuracy = 0.314
+
+100%|██████████| 62/62 [00:03<00:00, 19.45it/s]
+EPOCH 2 ... Validation Accuracy = 0.204
+
+100%|██████████| 62/62 [00:02<00:00, 22.67it/s]
+EPOCH 3 ... Validation Accuracy = 0.528
+
+100%|██████████| 62/62 [00:02<00:00, 21.58it/s]
+EPOCH 4 ... Validation Accuracy = 0.598
+
+100%|██████████| 62/62 [00:02<00:00, 20.95it/s]
+EPOCH 5 ... Validation Accuracy = 0.704
+
+100%|██████████| 62/62 [00:02<00:00, 21.00it/s]
+EPOCH 6 ... Validation Accuracy = 0.698
+
+100%|██████████| 62/62 [00:02<00:00, 23.78it/s]
+EPOCH 7 ... Validation Accuracy = 0.704
+
+100%|██████████| 62/62 [00:02<00:00, 21.63it/s]
+EPOCH 8 ... Validation Accuracy = 0.688
+
+100%|██████████| 62/62 [00:03<00:00, 20.66it/s]
+EPOCH 9 ... Validation Accuracy = 0.529
+
+100%|██████████| 62/62 [00:02<00:00, 21.43it/s]
+EPOCH 10 ... Validation Accuracy = 0.718
+
+Training for 10 epochs and 128 batch size took 346.2 seconds
+Model saved
+
+
+
+Training...
+- mu 0
+- sigma 0.1
+- EPOCHS 5 more the better, but achieving > 98% is a proof
+- BATCH SIZE 512 best results with 256 on my computer
+- DROPOUT 0.8 used for keep_prob
+
+100%|██████████| 16/16 [00:03<00:00,  4.97it/s]
+EPOCH 1 ... Validation Accuracy = 0.217
+
+100%|██████████| 16/16 [00:03<00:00,  5.61it/s]
+EPOCH 2 ... Validation Accuracy = 0.284
+
+100%|██████████| 16/16 [00:02<00:00,  5.74it/s]
+EPOCH 3 ... Validation Accuracy = 0.455
+
+100%|██████████| 16/16 [00:02<00:00,  5.39it/s]
+EPOCH 4 ... Validation Accuracy = 0.435
+
+100%|██████████| 16/16 [00:02<00:00,  6.28it/s]
+EPOCH 5 ... Validation Accuracy = 0.603
+
+Training for 5 epochs and 512 batch size took 161.9 seconds
+Model saved
+
+Re-loading saved ./model_00001
+100%|██████████| 25/25 [00:05<00:00,  5.75it/s]
+After running the TEST set agaist save model I get = 0.566
+
+
+Training...
+- mu 0
+- sigma 0.2
+- EPOCHS 2 more the better, but achieving > 98% is a proof
+- BATCH SIZE 512 best results with 256 on my computer
+- DROPOUT 0.8 used for keep_prob
+
+100%|██████████| 16/16 [00:04<00:00,  3.31it/s]
+EPOCH 1 ... Validation Accuracy = 0.382
+
+100%|██████████| 16/16 [00:08<00:00,  1.84it/s]
+EPOCH 2 ... Validation Accuracy = 0.429
+
+Training for 2 epochs and 512 batch size took 129.3 seconds
+Model saved
+
+
+
+
