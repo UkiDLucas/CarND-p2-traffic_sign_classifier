@@ -9,57 +9,70 @@
 
 # # Overview
 # 
-# Design and implement a deep learning model that learns to recognize traffic signs. 
+# In this notebook I design and implement a deep learning model that learns to recognize traffic signs. I train and test my model on the [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset).
 # 
-# Train and test your model on the [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset).
+# Here is an example of a [published baseline model on this problem](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf). 
 # 
-# There are various aspects to consider when thinking about this problem:
+# **NOTE:** 
 # 
-# - Neural network architecture
-# - Play around preprocessing techniques (normalization, rgb to grayscale, etc)
-# - Number of examples per label (some have more than others).
-# - Generate fake data.
-# 
-# Here is an example of a [published baseline model on this problem](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf). It's not required to be familiar with the approach used in the paper but, it's good practice to try to read papers like these.
-# 
-# **NOTE:** The LeNet-5 implementation shown in the [classroom](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/601ae704-1035-4287-8b11-e2c2716217ad/concepts/d4aca031-508f-4e0b-b493-e7b706120f81) at the end of the CNN lesson is a solid starting point. You'll have to change the number of classes and possibly the preprocessing, but aside from that it's plug and play!
-
-# **Table of Contents**
-# 
-# <div id="toc"></div>
+# The LeNet-5 implementation shown in the [classroom](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/601ae704-1035-4287-8b11-e2c2716217ad/concepts/d4aca031-508f-4e0b-b493-e7b706120f81) is a solid starting point.
 
 # ---
 # # Set-up
 # 
 # ## Hyper-parameters
 # 
-# I set the hyperparameters on top of the notebook for convenience of easy adjusting them
+# This section stay on top for easy access to parameters.
 
 # In[1]:
 
 # Hyperparameters
 # Arguments used for tf.truncated_normal, 
 # which randomly defines variables for the weights and biases for each layer
-mu = 0 # 0 seems
-sigma = 0.1 # 0.1 seems good
+mu = 0 # 0 seems OK (EPOCH 10 -> 0.821)
+sigma = 0.2 # 0.2 is better than 0.1 (EPOCH 10 -> 0.821)
 
-EPOCHS = 200 # more the better, but longer, 6 achieve 98%
-BATCH_SIZE = 256 #  OK larger is faster, memory limited
+EPOCHS = 100 # When I have time I run about 100, 70 is plenty enough to achive good model.
+BATCH_SIZE = 256 #  memory limited
 # on MacBook Pro 2.3GHz i7, 16GB 1600MHz DDR3 RAM: 
 # 128 (slowest), 256 (faster), 512 (slower)
-DROPOUT = 0.70 # 0.75
-validation_split = 0.30 # we will use ~20% of TRAIN data for validation
-best_model = "./model_0.884893309667"
+DROPOUT = 0.75 
+# 0.80 (EPOCH 10 -> 0.75)
+# 0.85 (EPOCH 10 -> 0.82)
+validation_split = 0.15 # we will use x% of TRAIN data for validation (0.15 -> EPOCH 10 -> 0.821)
+best_model = "./models/model_0.884893309667"
+goal_rate = 0.8
 
-
-# 
 
 # In[2]:
 
-import tensorflow as tf
+def print_hyper_parameters():
+    print("- mu = {},".format(mu))
+    print("- sigma = {},".format(sigma), "0.2 achieves 82% in 10 epochs." )
+    print("- EPOCHS = {},".format(EPOCHS), "I am achieving peak at about 70") 
+    print("- BATCH SIZE = {},".format(BATCH_SIZE), "best results achived with 256 on my computer") 
+    print("- DROPOUT = {},".format(DROPOUT), "used for keep_prob") 
+    print("- validation_split = {},".format(validation_split), "part of training set left for validation")
+    print("- best_model = {},".format(best_model), "best saved model I have") 
+    print("- goal_rate = {},".format(goal_rate), "rate after which I will quit, highest learning rate I recorded was 0.887") 
+    
+print_hyper_parameters()
 
+
+# **Table of Contents**
+# 
+# <div id="toc"></div>
 
 # In[3]:
+
+import time
+start = time.time()
+import tensorflow as tf
+end = time.time()
+print('import tensorflow as tf took {} seconds'.format(round(end - start,1)))
+
+
+# In[4]:
 
 from tqdm import tqdm
 # tqdm shows a smart progress meter
@@ -68,7 +81,7 @@ from tqdm import tqdm
 
 # ## Load The Data
 
-# In[4]:
+# In[5]:
 
 # Load pickled German street signs dataset from:
 # http://bit.ly/german_street_signs_dataset
@@ -88,7 +101,7 @@ X_train, y_train = train['features'], train['labels']
 X_test, y_test = test['features'], test['labels']
 
 
-# In[5]:
+# In[6]:
 
 # Make sure the number of images in TRAIN set matches the number of labels
 assert(len(X_train) == len(y_train))
@@ -100,7 +113,7 @@ assert(len(X_test) == len(y_test))
 # assert(len(X_validation) == len(y_validation)) 
 
 
-# In[6]:
+# In[7]:
 
 # print example of one image to see the dimentions of data
 print()
@@ -109,7 +122,7 @@ print()
 # Image Shape: (32, 32, 3) - good for LeNet, no need for padding with zero
 
 
-# In[7]:
+# In[8]:
 
 # print size of each set
 training_set_size = len(X_train)
@@ -141,12 +154,12 @@ print("Test Set:       {} samples".format(testing_set_size))
 # MEETS SPECIFICATIONS:
 # Student performs basic data summary.
 
-# In[8]:
+# In[9]:
 
 import numpy as np
 
 
-# In[9]:
+# In[10]:
 
 ### Replace each question mark with the appropriate value.
  
@@ -199,7 +212,7 @@ np.unique(y_train)
 # **NOTE:** It's recommended you start with something simple first. If you wish to do more, 
 # come back to it after you've completed the rest of the sections.
 
-# In[10]:
+# In[11]:
 
 def human_readable_sign_names(sign_number):
     return {
@@ -261,7 +274,7 @@ print( human_readable_sign_names(43))
 # 
 # In this case, the **computer might be able to detect the right sign better than human eye**.
 
-# In[11]:
+# In[12]:
 
 import random
 # import numpy as np # already imported
@@ -281,7 +294,7 @@ plt.show()
 
 # ### Training Data Labels Distribution
 
-# In[12]:
+# In[13]:
 
 # train is the pickle file
 histOut = plt.hist(train['labels'],number_train_labels, facecolor='g', alpha=0.60)
@@ -289,7 +302,7 @@ histOut = plt.hist(train['labels'],number_train_labels, facecolor='g', alpha=0.6
 
 # ### Testing Data Labels Distribution
 
-# In[13]:
+# In[14]:
 
 histOut = plt.hist(test['labels'],number_train_labels, facecolor='g', alpha=0.60)
 
@@ -301,7 +314,7 @@ histOut = plt.hist(test['labels'],number_train_labels, facecolor='g', alpha=0.60
 # ## Preprocessing
 # 
 # 
-# <font color='red'>
+# <font color='PURPLE'>
 # Students provides sufficient details of the preprocessing techniques used. Additionally, the student discusses why the techniques were chosen.
 # </font>
 # 
@@ -317,10 +330,28 @@ histOut = plt.hist(test['labels'],number_train_labels, facecolor='g', alpha=0.60
 # - I am keeping 3 color chanels as they should be beneficial in categorization
 # - image color depth scaling to values between -0.5 and +0.5
 # - Create validation set as 20% of the training set 
+# 
+# 
+# ** Further Suggestions **
+# 
+# To inspire further improvements, here are some preprocessing techniques that have proven to work on this dataset:
+# 
+# - Performing translations, scalings and rotations of the training set considerably improves generalization
+# - Values for translation, rotation and scaling can be drawn from a uniform distribution in a specified range, i.e. ±T % of the image size for translation, 1±S/100 for scaling and ±R◦ for rotation.
+# - Convertion to grayscale can also help.
+# - A normalization method that yields very impressive results is the Contrast-limited Adaptive Histogram Equalization (CLAHE)
+# - Normalization can help in case of High contrast variation among the images
+# - More preprocessing steps could be included
+# - These resources (1 & 2) might provide some more intuition on the subject
+# 
+# 
+# http://people.idsia.ch/~juergen/nn2012traffic.pdf
+# 
+# http://people.idsia.ch/~juergen/ijcnn2011.pdf
 
 # ### Scale Image Color Depth from 0..255 to -0.5 to +0.5
 
-# In[14]:
+# In[15]:
 
 def scale_image_color_depth(value):
     """ 
@@ -339,7 +370,7 @@ print("normalized", scale_image_color_depth(255)) # max value
     
 
 
-# In[15]:
+# In[16]:
 
 def scale_image_color_depth_for_all(image_set):
     results = np.copy(image_set) # create placeholder
@@ -352,7 +383,7 @@ def scale_image_color_depth_for_all(image_set):
 # 
 # The effect should be that the images with little contrast should be very readable now.
 
-# In[16]:
+# In[17]:
 
 # http://docs.opencv.org/3.1.0/d5/daf/tutorial_py_histogram_equalization.html
 import cv2
@@ -390,7 +421,7 @@ plt.show()
 
 # ## Preprocess image sets (scale, histogram)
 
-# In[17]:
+# In[18]:
 
 # TRAIN FEATURES
 # Apply histogram before changing color depth
@@ -420,7 +451,7 @@ test_features = scale_image_color_depth_for_all(X_test.astype(float))
 # #### Question 2 (describe training, validation and testing)
 # 
 # <br/>
-# <font color='red'>
+# <font color='Purple'>
 # Student describes how the model was trained and evaluated. If the student generated additional data they discuss their process and reasoning. Additionally, the student discusses the difference between the new dataset with additional data, and the original dataset.
 # </font>
 # 
@@ -432,7 +463,7 @@ test_features = scale_image_color_depth_for_all(X_test.astype(float))
 # - assert that the number of features is same as corresponding labels
 # - display the count of each
 
-# In[18]:
+# In[19]:
 
 from sklearn.cross_validation import train_test_split
 # http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
@@ -442,7 +473,7 @@ X_train, X_validation, y_train, y_validation = train_test_split(train_features,
                                                                 random_state=42)
 
 
-# In[19]:
+# In[20]:
 
 # Make sure the number of images in TRAIN set matches the number of labels
 assert(len(X_train) == len(y_train))
@@ -457,7 +488,7 @@ assert(len(X_validation) == len(y_validation))
 print("len(X_validation)", len(X_validation))
 
 
-# In[20]:
+# In[21]:
 
 from sklearn.utils import shuffle
 
@@ -469,7 +500,7 @@ X_train, y_train = shuffle(X_train, y_train)
 # - `x` is a placeholder for a batch of input images.
 # - `y` is a placeholder for a batch of output labels.
 
-# In[21]:
+# In[22]:
 
 # x variable (Tensor) stores input batches
 # None - later accepts batch of any size
@@ -493,7 +524,7 @@ keep_prob = tf.placeholder(tf.float32)
 # ---
 # ## Model Architecture
 # 
-# <font color='red'>
+# <font color='Purple'>
 # Student provides sufficient details of the characteristics and qualities of the architecture, such as the type of model used, the number of layers, the size of each layer. Visualizations emphasizing particular qualities of the architecture are encouraged.
 # </font>
 # 
@@ -509,9 +540,21 @@ keep_prob = tf.placeholder(tf.float32)
 # - MNIST images are grayscale, C is 1.
 # - German street sign images have **3 color channels**, C is 3.
 # 
+# **Suggestions & Comments **
 # 
+# - Using StratifiedShuffleSplit over the traditional train-test-split, enables the use of the entire training data while keeping data for cross-validation: the distribution of the labels in both would be similar. Around 1% of the data can be used for the cross-validation set.
+# - Also here's a nice discussion on how to choose the batch_size of Stochastic Gradient Decent
+# - And a nice Discussion on Adam Optimizer
+# 
+# http://stats.stackexchange.com/questions/140811/how-large-should-the-batch-size-be-for-stochastic-gradient-descent
+# 
+# http://sebastianruder.com/optimizing-gradient-descent/index.html#adam
 
 # #### Question 3: ( architecture of CDNN)
+# 
+# <font color='Purple'>
+# Student thoroughly discusses the approach taken for deriving and designing a model architecture fit for solving the problem given.
+# </font>
 # 
 # _What does your final architecture look like? (Type of model, layers, sizes, connectivity, etc.)  For reference on how to build a deep neural network using TensorFlow, see [Deep Neural Network in TensorFlow
 # ](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/b516a270-8600-4f93-a0a3-20dfeabe5da6/concepts/83a3a2a2-a9bd-4b7b-95b0-eb924ab14432) from the classroom._
@@ -544,15 +587,29 @@ keep_prob = tf.placeholder(tf.float32)
 # - Convolution Output Tensor("add_4:0", shape=(?, 43), dtype=float32)
 # - ReLU Output Tensor("Relu_4:0", shape=(?, 43), dtype=float32)
 # 
+# 
+# ** Suggestions & Comments **
+# 
+# Here are few questions to think about while designing the architecture:
+# 
+# - How would I choose the optimizer? What is its Pros & Cons and how would I evaluate it?
+# - How would I decide the number and type of layers?
+# - How would I tune the hyperparameter? How many values should I test and how to decide the values?
+# - How would I preprocess my data? Why do I need to apply a certain technique?
+# - How would I train the model?
+# - How would I evaluate the model? What is the metric? How do I set the benchmark?
+# Also, here's an interesting Inception's example.
+# 
+# https://github.com/tflearn/tflearn/blob/master/examples/images/googlenet.py
 
-# In[22]:
+# In[23]:
 
 def convolution_output_size(input_size=32, filter_size=5, stride_veritcal=1):
     output_size = (input_size - filter_size + 1)/stride_veritcal
     print("Calculated output size", output_size)
 
 
-# In[23]:
+# In[24]:
 
 def pooling_layer(input_tensor):
     # POOLING (SUBSAMPLING) LAYER L2
@@ -572,7 +629,7 @@ def pooling_layer(input_tensor):
     return tensor
 
 
-# In[24]:
+# In[25]:
 
 def convolution_layer(input_tensor, filter_size=5, input_depth=3, output_depth=6):
     # L1 filter (5,5,3,6)
@@ -608,7 +665,7 @@ def convolution_layer(input_tensor, filter_size=5, input_depth=3, output_depth=6
     return tensor
 
 
-# In[25]:
+# In[26]:
 
 def convolution_fully_connected(input_tensor, input_size=400, output_size=120):
     # Fully Connected. Input = 400. Output = 120.
@@ -627,7 +684,7 @@ def convolution_fully_connected(input_tensor, input_size=400, output_size=120):
     return tensor
 
 
-# In[26]:
+# In[27]:
 
 from tensorflow.contrib.layers import flatten
 
@@ -683,7 +740,7 @@ def convolutional_neural_network(tensor):
 
 # Create a training pipeline that uses the model to classify sign data.
 
-# In[27]:
+# In[28]:
 
 logits = convolutional_neural_network(x)
 
@@ -696,7 +753,7 @@ logits = convolutional_neural_network(x)
 # Cross Entropy is the measure of how different are 
 # the logits (output classes) from ground truth training labels
 
-# In[28]:
+# In[29]:
 
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, one_hot_y)
 print(cross_entropy)
@@ -726,18 +783,6 @@ print("mean_loss_tensor",mean_loss_tensor)
 # 
 # Simply put, this enables Adam to use a larger effective step size (rate), 
 # and the algorithm will converge to this step size without fine tuning
-
-# In[29]:
-
-def print_hyper_parameters():
-    print("- mu", mu)
-    print("- sigma", sigma)
-    print("- EPOCHS", EPOCHS, "more the better, but achieving > 98% is a proof") 
-    print("- BATCH SIZE", BATCH_SIZE, "best results with 256 on my computer") 
-    print("- DROPOUT", DROPOUT, "used for keep_prob") 
-    
-print_hyper_parameters()
-
 
 # #### Dropout
 # 
@@ -819,6 +864,9 @@ with tf.Session() as sess:
         # EPOCH 2 ... Validation Accuracy = 0.500 - growing
         # training for 2 epochs and 256 batch size took 41.1 seconds
         print()
+        if validation_accuracy > goal_rate: # I want to beat my best prediction to date and stop there
+            print ("stopping after achieving",validation_accuracy )
+            break
     
     end = time.time()
     print('Training for {} epochs and {} batch size took {} seconds'.format(
@@ -827,7 +875,7 @@ with tf.Session() as sess:
     # upon training complete, save it so we do not have to train again
     # assure to save the model with achieved accuracy,
     # this way later I can select the best run
-    saver.save(sess, './model_' + str(validation_accuracy))
+    saver.save(sess, './models/model_' + str(validation_accuracy))
     print("Model saved")
     
 
@@ -864,6 +912,8 @@ vector_accurancies  = [ 0.210, 0.357, 0.419, 0.583, 0.625, 0.633, 0.639,
                        0.865, 0.875, 0.882, 0.885, 0.885, 0.885, 0.885, 
                        0.886, 0.885]
 
+import numpy as np
+print ("max achieved", np.amax(vector_accurancies))
 import matplotlib.pyplot as plt
 plt.plot(vector_accurancies)
 plt.xlabel('EPOCHS')
@@ -871,7 +921,7 @@ plt.ylabel('PERCENTAGE')
 plt.show()
 
 
-# ### Question 5
+# #### Question 5 (describe final solution)
 # 
 # <font color='Purple'>
 # _What approach did you take in coming up with a solution to this problem? It may have been a process of trial and error, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think this is suitable for the current problem._
@@ -922,23 +972,35 @@ plt.show()
 
 # I will be updating the model name to the HIGHEST accurancy achieved
 
+import time # takes no time if imported previously
+start = time.time()
+
+import tensorflow as tf # takes no time if imported previously
+saver = tf.train.Saver()
+
+end = time.time()
+print('import tensorflow as tf took {} seconds'.format(round(end - start,1)))
+
+
+
 with tf.Session() as sess:
     print ('Re-loading saved model' + best_model)
-    saver.restore(sess,   best_model)
+    saver.restore(sess, best_model)
 
     test_accuracy = evaluate(X_test, y_test)
     print("Evaluating the TEST set agaist restored model trained to 88.4%, result = {:.1f}% accurancy".format(test_accuracy*100))
 
 
-# ---
-# 
 # # Test a Model on New Images
 # 
-# 
-
 # #### Question 6 (choose and describe 5 new images)
 # 
+# 
 # <font color='Purple'>
+# 
+# Student chooses five candidate images of traffic signs taken and visualizes them in the report. Discussion is made as to any particular qualities of the images or traffic signs in the images that may be of interest, such as whether they would be difficult for the model to classify.
+# 
+# 
 # Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.
 # 
 # You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name.
@@ -953,6 +1015,13 @@ with tf.Session() as sess:
 # 
 # - I found 7 signs that indicate 23: "Slippery road",
 # - I think they are a VERY IMTERESTING test as each is a little different
+# - 1) triangle/red/white on blue background
+# - 2) triangle/red/white on green background, sightly different car and crossing over tire marks
+# - 3) triangle/red/**yellow** on blue/yellow background, very different tire marks
+# - 4) **rectangle/black**/yellow on white background - **I DO NOT expect it to be recognized**
+# - 5) triangle/red/white on green background, sightly different car and crossing over tire marks, This is similar to 2, but not the same design
+# - 6) triangle/red/white on **winter-blue background with snow cap**
+# - 7) triangle/red/white on **winter-blue background with 70% of sign covered in snow**
 # - I resized each to square
 # - I created a notebook with code to resize whole directory of images, see same folder
 # - I resized each to 32x32 - the QUALITY IS TERRIBLE
@@ -1029,6 +1098,15 @@ image_matrix.shape
 # 
 # <font color='Purple'>
 # Student documents the performance of the model when tested on the captured images and compares it to the results of testing on the dataset.
+# 
+# <p/>
+# **Required:**
+# <p/>
+# - Compare them to the test results of the dataset.
+# <br/>
+# - The aim here is to document the performance of your model on the new images and compare it to the test accuracy on the dataset.
+# <br/>
+# - Your explanation can look something like: the accuracy on the captured images is X% while it was Y% on the testing set thus It seems the model is overfitting
 # </font>
 # 
 # 
@@ -1039,12 +1117,14 @@ image_matrix.shape
 # 
 # **Answer:**
 # 
+# The accuracy on the captured images is **0% while it was 68.2%** on the testing set thus it seems the model is was overfit.
+# 
 # - I created image_matrix with 7 of my NEW #23: "Slippery road"
 # - I preprocess them the same way as training set, I got new_images
 # - I created lables (all same): new_labels = [23, 23, 23, 23, 23, 23, 23]
 # - I run evaluate function (test set returned 0.682)
 # - My set of NEW images returned 0% accurancy (disappointing)
-# - I cannot explain this, considering that I had 1 image from training set
+# - I cannot explain this, **considering that I had 1 image from training set**
 
 # In[40]:
 
@@ -1091,6 +1171,18 @@ with tf.Session() as sess:
 # - Predition is totally misleading
 # - For some there is 100%, for other 20%
 # - It is hard to draw any conclusion
+# 
+# 
+# 
+# ** Suggestions & Comments **
+# 
+# 
+# - Usually I'd recommend for each of the five signs, a histogram of softmax probabilities for each class (or for the 5-10 classes with highest probabilities).
+# - Here is an example code from a student for visualizing the softmax probabilities:
+# 
+# **(I plan to review and implemnt this in the future)**
+# 
+# <img src="./visualize_softmax.png" />
 
 # In[43]:
 
