@@ -41,9 +41,9 @@
 # Arguments used for tf.truncated_normal, 
 # which randomly defines variables for the weights and biases for each layer
 mu = 0 # 0 seems
-sigma = 0.3 # 0.1 seems good
+sigma = 0.1 # 0.1 seems good
 
-EPOCHS = 7 # more the better, but longer, 6 achieve 98%
+EPOCHS = 200 # more the better, but longer, 6 achieve 98%
 BATCH_SIZE = 256 #  OK larger is faster, memory limited
 # on MacBook Pro 2.3GHz i7, 16GB 1600MHz DDR3 RAM: 
 # 128 (slowest), 256 (faster), 512 (slower)
@@ -1092,7 +1092,7 @@ with tf.Session() as sess:
 # - For some there is 100%, for other 20%
 # - It is hard to draw any conclusion
 
-# In[49]:
+# In[43]:
 
 softmax_tensor = tf.nn.softmax(logits)
 
@@ -1115,7 +1115,7 @@ for index in tqdm(range(len(values))):
     print(human_readable_sign_names(values[index]), values[index])
 
 
-# In[47]:
+# In[44]:
 
 ### Visualize the softmax probabilities
 top = 5
