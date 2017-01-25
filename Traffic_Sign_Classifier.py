@@ -25,9 +25,13 @@
 # **NOTE:** The LeNet-5 implementation shown in the [classroom](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/601ae704-1035-4287-8b11-e2c2716217ad/concepts/d4aca031-508f-4e0b-b493-e7b706120f81) at the end of the CNN lesson is a solid starting point. You'll have to change the number of classes and possibly the preprocessing, but aside from that it's plug and play!
 
 # **Table of Contents**
+# 
 # <div id="toc"></div>
 
-# # Hyper-parameters
+# ---
+# # Set-up
+# 
+# ## Hyper-parameters
 # 
 # I set the hyperparameters on top of the notebook for convenience of easy adjusting them
 
@@ -39,11 +43,12 @@
 mu = 0
 sigma = 0.3
 
-EPOCHS = 100 # more the better, but longer, 6 achieve 98%
-BATCH_SIZE = 512 #  OK larger is faster, memory limited
+EPOCHS = 3 # more the better, but longer, 6 achieve 98%
+BATCH_SIZE = 256 #  OK larger is faster, memory limited
 # on MacBook Pro 2.3GHz i7, 16GB 1600MHz DDR3 RAM: 
 # 128 (slowest), 256 (faster), 512 (slower)
-DROPOUT = 0.80 # 0.75
+DROPOUT = 0.70 # 0.75
+validation_split = 0.30 # we will use ~20% of TRAIN data for validation
 
 
 # 
@@ -60,7 +65,7 @@ from tqdm import tqdm
 # usage: tqdm(iterable)
 
 
-# # Load The Data
+# ## Load The Data
 
 # In[4]:
 
@@ -130,7 +135,7 @@ print("Test Set:       {} samples".format(testing_set_size))
 # 
 # Complete the basic data summary below.
 
-# ## CRITERIA: Dataset Summary
+# ## Dataset Summary
 # 
 # MEETS SPECIFICATIONS:
 # Student performs basic data summary.
@@ -177,7 +182,7 @@ np.unique(y_train)
 # Number of classes = 43
 
 
-# ## CRITERIA: Exploratory Visualization
+# ## Exploratory Visualization
 # 
 # MEETS SPECIFICATIONS: 
 # Student performs an exploratory visualization on the dataset.
@@ -249,34 +254,28 @@ print( human_readable_sign_names(42))
 print( human_readable_sign_names(43))
 
 
+# ## Display sample images with corresponding labels
+# 
+# Please note the terrible quality of the images.
+# 
+# In this case, the **computer might be able to detect the right sign better than human eye**.
+
 # In[11]:
-
-### Data exploration visualization goes here.
-### Feel free to use as many code cells as needed.
-#import matplotlib.pyplot as plt
-# Visualizations will be shown in the notebook.
-#%matplotlib inline
-
 
 import random
 # import numpy as np # already imported
 import matplotlib.pyplot as plt
 get_ipython().magic('matplotlib inline')
 
-sample_size = 5
+figure, axes = plt.subplots(10, 5, figsize=(32,32))
+for rows in range(10):
+    for columns in range(5):
+        index = random.randint(0, len(X_train))
+        image = X_train[index]#.squeeze()
 
-plt.rcParams["figure.figsize"] = [32, 5]
-
-# show 5 random images and their labels
-for i in tqdm(range(sample_size)):
-    # select random image index from training set
-    index = random.randint(0, len(X_train))
-    
-    # get actual image
-    image = X_train[index].squeeze()
-    plt.subplot(1, sample_size, i + 1)
-    plt.title(human_readable_sign_names(y_train[index]))
-    plt.imshow(image) # not gray: plt.imshow(image, cmap="gray")
+        axes[rows,columns].imshow(image)
+        axes[rows,columns].set_title(human_readable_sign_names(y_train[index]))
+plt.show()
 
 
 # ### Training Data Labels Distribution
@@ -295,15 +294,19 @@ histOut = plt.hist(test['labels'],number_train_labels, facecolor='g', alpha=0.60
 
 
 # ---
+# 
 # # Design and Test a Model Architecture
 # 
-# ## CRITERIA: Preprocessing
-# MEETS SPECIFICATIONS:
+# ## Preprocessing
+# 
+# 
+# <font color='red'>
 # Students provides sufficient details of the preprocessing techniques used. Additionally, the student discusses why the techniques were chosen.
+# </font>
 # 
 # 
 # 
-# ### Question 1 
+# #### Question 1 (preprocessing)
 # 
 # _Describe how you preprocessed the data. Why did you choose that technique?_
 # 
@@ -313,6 +316,8 @@ histOut = plt.hist(test['labels'],number_train_labels, facecolor='g', alpha=0.60
 # - I am keeping 3 color chanels as they should be beneficial in categorization
 # - image color depth scaling to values between -0.5 and +0.5
 # - Create validation set as 20% of the training set 
+
+# ### Scale Image Color Depth from 0..255 to -0.5 to +0.5
 
 # In[14]:
 
@@ -342,23 +347,81 @@ def scale_image_color_depth_for_all(image_set):
     return results
 
 
+# ### Histogram Equalization (even out brighness)
+# 
+# Te effect should be that the images with little contrast should be very readable now.
+
 # In[16]:
 
+# http://docs.opencv.org/3.1.0/d5/daf/tutorial_py_histogram_equalization.html
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+
+def histogram_equalization(image):
+    hist,bins = np.histogram(image.flatten(),256,[0,256])
+    cdf = hist.cumsum()
+    cdf_normalized = cdf * hist.max()/ cdf.max()
+    plt.plot(cdf_normalized, color = 'b')
+    plt.hist(image.flatten(),256,[0,256], color = 'r')
+    plt.xlim([0,256])
+    plt.legend(('cdf','histogram'), loc = 'upper left')
+    plt.show()
+    return image
+
+def histogram_clahe(image):
+    # create a CLAHE object (Arguments are optional).
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    cl1 = clahe.apply(image)
+    #cv2.imwrite('clahe_2.jpg',cl1)
+    return cl1
+
+
+
+image = cv2.imread('images/sample_set.jpg',0)
+plt.imshow(image)
+plt.show()
+# histogram_equalization(image)
+new_image = histogram_clahe(image)
+plt.imshow(new_image)
+plt.show()
+
+
+# ## Preprocess image sets (scale, histogram)
+
+# In[17]:
+
+# TRAIN FEATURES
+# Apply histogram before changing color depth
+# train_features = histogram_clahe(X_train.astype(float))
 # Scale training set
 train_features = scale_image_color_depth_for_all(X_train.astype(float))
 
 
-# In[17]:
-
+# TEST FEATURES
+# Apply histogram before changing color depth
+# test_features = histogram_clahe(X_test.astype(float))
 # Scale testing set
 test_features = scale_image_color_depth_for_all(X_test.astype(float))
 
+# TODO the application of histogram needs more love.
 
-# #### Create validation set as 20% of the training set
+
+# In[ ]:
+
+
+
+
+# ### Create validation set as 20% of the training set
 # 
 # Use scaled values of the training set.
 
-# ### Question 2
+# #### Question 2 (describe training, validation and testing)
+# 
+# <br/>
+# <font color='red'>
+# Student describes how the model was trained and evaluated. If the student generated additional data they discuss their process and reasoning. Additionally, the student discusses the difference between the new dataset with additional data, and the original dataset.
+# </font>
 # 
 # _Describe how you set up the training, validation and testing data for your model. **Optional**: If you generated additional data, how did you generate the data? Why did you generate the data? What are the differences in the new dataset (with generated data) from the original dataset?_
 # 
@@ -374,7 +437,7 @@ from sklearn.cross_validation import train_test_split
 # http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
 X_train, X_validation, y_train, y_validation = train_test_split(train_features, 
                                                                 y_train, 
-                                                                test_size=0.20, 
+                                                                test_size = validation_split, 
                                                                 random_state=42)
 
 
@@ -427,39 +490,59 @@ keep_prob = tf.placeholder(tf.float32)
 
 
 # ---
-# ## CRITERIA: Model Architecture
+# ## Model Architecture
 # 
-# MEETS SPECIFICATIONS:
+# <font color='red'>
 # Student provides sufficient details of the characteristics and qualities of the architecture, such as the type of model used, the number of layers, the size of each layer. Visualizations emphasizing particular qualities of the architecture are encouraged.
-# 
+# </font>
 # 
 # ### Convolutional Deep Neural Network
 # 
 # Implement the neural network architecture based on LeNet-5.
 # 
 # 
-# #### Input
+# **Input **
+# 
 # The LeNet architecture accepts a 32x32xC number_color_channels. 
 # 
 # - MNIST images are grayscale, C is 1.
 # - German street sign images have **3 color channels**, C is 3.
 # 
-# #### Architecture
-# - Layer 1: Convolutional. The output shape should be 28x28x6.
-# - Activation. Your choice of activation function.
-# - Pooling. The output shape should be 14x14x6.
-# - Layer 2: Convolutional. The output shape should be 10x10x16.
-# - Activation. Your choice of activation function.
-# - Pooling. The output shape should be 5x5x16.
-# - Flatten. Flatten the output shape of the final pooling layer such that it's 1D instead of 3D. The easiest way to do is by using tf.contrib.layers.flatten, which is already imported for you.
-# - Layer 3: Fully Connected. This should have 120 outputs.
-# - Activation. Your choice of activation function.
-# - Layer 4: Fully Connected. This should have 84 outputs.
-# - Activation. Your choice of activation function.
-# - Layer 5: Fully Connected (Logits). This should have 10 outputs.
 # 
-# #### Output
-# - Return the result of the 2nd fully connected layer.
+
+# #### Question 3: ( architecture of CDNN)
+# 
+# _What does your final architecture look like? (Type of model, layers, sizes, connectivity, etc.)  For reference on how to build a deep neural network using TensorFlow, see [Deep Neural Network in TensorFlow
+# ](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/b516a270-8600-4f93-a0a3-20dfeabe5da6/concepts/83a3a2a2-a9bd-4b7b-95b0-eb924ab14432) from the classroom._
+# 
+# **Answer:**
+# 
+# CONVOLUTIONAL LAYER L1
+# - Calculated output size 28.0
+# - Convolution Output Tensor("add:0", shape=(?, 28, 28, 6), dtype=float32)
+# - ReLU Output Tensor("Relu:0", shape=(?, 28, 28, 6), dtype=float32)
+# - Pooling Layer Output Tensor("MaxPool:0", shape=(?, 14, 14, 6), dtype=float32)
+# 
+# CONVOLUTIONAL LAYER L2
+# - Calculated output size 28.0
+# - Convolution Output Tensor("add_1:0", shape=(?, 10, 10, 16), dtype=float32)
+# - ReLU Output Tensor("Relu_1:0", shape=(?, 10, 10, 16), dtype=float32)
+# - Pooling Layer Output Tensor("MaxPool_1:0", shape=(?, 5, 5, 16), dtype=float32)
+# 
+# FLATTENING LAYER L3
+# - Flattened Output Tensor("Flatten/Reshape:0", shape=(?, 400), dtype=float32)
+# - CONVOLUTIONAL FULLY CONNECTED LAYER L4
+# - Convolution Output Tensor("add_2:0", shape=(?, 120), dtype=float32)
+# - ReLU Output Tensor("Relu_2:0", shape=(?, 120), dtype=float32)
+# 
+# CONVOLUTIONAL FULLY CONNECTED LAYER L5
+# - Convolution Output Tensor("add_3:0", shape=(?, 84), dtype=float32)
+# - ReLU Output Tensor("Relu_3:0", shape=(?, 84), dtype=float32)
+# 
+# CONVOLUTIONAL FULLY CONNECTED LAYER L6
+# - Convolution Output Tensor("add_4:0", shape=(?, 43), dtype=float32)
+# - ReLU Output Tensor("Relu_4:0", shape=(?, 43), dtype=float32)
+# 
 
 # In[22]:
 
@@ -517,7 +600,7 @@ def convolution_layer(input_tensor, filter_size=5, input_depth=3, output_depth=6
     
     # ReLU Activation function.
     tensor = tf.nn.relu(features = tensor)
-    print("ReLU Output", tensor)
+    print("ReLU Activation funtion Output", tensor)
     # ReLU output Tensor("Relu:0", shape=(?, 28, 28, 6), dtype=float32)
     
     tensor = pooling_layer(input_tensor = tensor)
@@ -539,7 +622,7 @@ def convolution_fully_connected(input_tensor, input_size=400, output_size=120):
     
     # ReLu Activation.
     tensor    = tf.nn.relu(tensor)
-    print("ReLU Output", tensor)
+    print("ReLU Activation funtion Output", tensor)
     return tensor
 
 
@@ -585,12 +668,13 @@ def convolutional_neural_network(tensor):
     return tensor # logits
 
 
-# ## CRITERIA: Dataset and Training
-# MEETS SPECIFICATIONS:
+# ## Dataset and Training
+# 
+# <font color='red'>
 # Student describes how the model was trained and evaluated. If the student generated additional data they discuss their process and reasoning. Additionally, the student discusses the difference between the new dataset with additional data, and the original dataset.
+# </font>
 # 
-# 
-# 
+# ** Answer: **
 # - Run the training data through the training pipeline to train the model.
 # - Before each epoch, shuffle the training set.
 # - After each epoch, measure the loss and accuracy of the validation set.
@@ -602,40 +686,6 @@ def convolutional_neural_network(tensor):
 
 logits = convolutional_neural_network(x)
 
-
-# ### Question 3: Architecture of CDNN
-# 
-# _What does your final architecture look like? (Type of model, layers, sizes, connectivity, etc.)  For reference on how to build a deep neural network using TensorFlow, see [Deep Neural Network in TensorFlow
-# ](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/b516a270-8600-4f93-a0a3-20dfeabe5da6/concepts/83a3a2a2-a9bd-4b7b-95b0-eb924ab14432) from the classroom._
-# 
-# **Answer:**
-# 
-# CONVOLUTIONAL LAYER L1
-# - Calculated output size 28.0
-# - Convolution Output Tensor("add:0", shape=(?, 28, 28, 6), dtype=float32)
-# - ReLU Output Tensor("Relu:0", shape=(?, 28, 28, 6), dtype=float32)
-# - Pooling Layer Output Tensor("MaxPool:0", shape=(?, 14, 14, 6), dtype=float32)
-# 
-# CONVOLUTIONAL LAYER L2
-# - Calculated output size 28.0
-# - Convolution Output Tensor("add_1:0", shape=(?, 10, 10, 16), dtype=float32)
-# - ReLU Output Tensor("Relu_1:0", shape=(?, 10, 10, 16), dtype=float32)
-# - Pooling Layer Output Tensor("MaxPool_1:0", shape=(?, 5, 5, 16), dtype=float32)
-# 
-# FLATTENING LAYER L3
-# - Flattened Output Tensor("Flatten/Reshape:0", shape=(?, 400), dtype=float32)
-# - CONVOLUTIONAL FULLY CONNECTED LAYER L4
-# - Convolution Output Tensor("add_2:0", shape=(?, 120), dtype=float32)
-# - ReLU Output Tensor("Relu_2:0", shape=(?, 120), dtype=float32)
-# 
-# CONVOLUTIONAL FULLY CONNECTED LAYER L5
-# - Convolution Output Tensor("add_3:0", shape=(?, 84), dtype=float32)
-# - ReLU Output Tensor("Relu_3:0", shape=(?, 84), dtype=float32)
-# 
-# CONVOLUTIONAL FULLY CONNECTED LAYER L6
-# - Convolution Output Tensor("add_4:0", shape=(?, 43), dtype=float32)
-# - ReLU Output Tensor("Relu_4:0", shape=(?, 43), dtype=float32)
-# 
 
 # ### Model Evaluation
 # Evaluate how well the loss and accuracy of the model for a given dataset.
@@ -656,7 +706,7 @@ print("mean_loss_tensor",mean_loss_tensor)
 
 
 
-# ### Question 4
+# #### Question 4 (training, optimizer, batch size, epochs, params)
 # 
 # _How did you train your model? (Type of optimizer, batch size, epochs, hyperparameters, etc.)_
 # 
@@ -818,12 +868,7 @@ with tf.Session() as sess:
 # Model saved
 
 # ---
-# 
-# ## Step 3: Test a Model on New Images
-# 
-# Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.
-# 
-# You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name.
+# # Evaluate saved model agaist the TEST set
 
 # In[34]:
 
@@ -835,7 +880,15 @@ with tf.Session() as sess:
     print("After running the TEST set agaist save model I get = {:.3f}".format(test_accuracy))
 
 
-# ### Question 6
+# ---
+# 
+# # Test a Model on New Images
+# 
+# Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.
+# 
+# You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name.
+
+# #### Question 6 (choose and describe 5 new images)
 # 
 # _Choose five candidate images of traffic signs and provide them in the report. Are there any particular qualities of the image(s) that might make classification difficult? It could be helpful to plot the images in the notebook._
 # 
@@ -846,7 +899,12 @@ with tf.Session() as sess:
 # 
 # ![title](images/example_5.png)
 
-# ### Question 7
+# #### Question 7 (performance of new images)
+# 
+# <font color='red'>
+# Student documents the performance of the model when tested on the captured images and compares it to the results of testing on the dataset.
+# </font>
+# 
 # 
 # _Is your model able to perform equally well on captured pictures when compared to testing on the dataset? The simplest way to do this check the accuracy of the predictions. For example, if the model predicted 1 out of 5 signs correctly, it's 20% accurate._
 # 
@@ -855,7 +913,7 @@ with tf.Session() as sess:
 
 # **Answer:**
 
-# In[93]:
+# In[35]:
 
 import os
 directory = "images/verification/"
@@ -864,7 +922,7 @@ print (len(listing))
 listing
 
 
-# In[101]:
+# In[36]:
 
 from skimage import io
  
@@ -885,13 +943,13 @@ image_matrix.shape
 plt.imshow(image_matrix[counter])
 
 
-# In[102]:
+# In[37]:
 
 test_img_data = scale_image_color_depth_for_all(
     image_matrix.reshape((-1, 32, 32, 3)).astype(float))
 
 
-# In[108]:
+# In[38]:
 
 plt.rcParams["figure.figsize"] = [32, 5]
 
@@ -903,7 +961,9 @@ for i in tqdm(range(8)):
     plt.imshow(image) # not gray: plt.imshow(image, cmap="gray")
 
 
-# ### Question 8
+# #### Question 8 (visualize softmax on new images)
+# 
+# The softmax probabilities of the predictions on the captured images are visualized. The student discusses how certain or uncertain the model is of its predictions.
 # 
 # *Use the model's softmax probabilities to visualize the **certainty** of its predictions, [`tf.nn.top_k`](https://www.tensorflow.org/versions/r0.12/api_docs/python/nn.html#top_k) could prove helpful here. Which predictions is the model certain of? Uncertain? If the model was incorrect in its initial prediction, does the correct prediction appear in the top k? (k should be 5 at most)*
 # 
@@ -941,7 +1001,7 @@ for i in tqdm(range(8)):
 # 
 # Looking just at the first row we get `[ 0.34763842,  0.24879643,  0.12789202]`, you can confirm these are the 3 largest probabilities in `a`. You'll also notice `[3, 0, 5]` are the corresponding indices.
 
-# In[123]:
+# In[39]:
 
 softmax_tensor = tf.nn.softmax(logits)
 
