@@ -40,15 +40,16 @@
 # Hyperparameters
 # Arguments used for tf.truncated_normal, 
 # which randomly defines variables for the weights and biases for each layer
-mu = 0
-sigma = 0.3
+mu = 0 # 0 seems
+sigma = 0.3 # 0.1 seems good
 
-EPOCHS = 3 # more the better, but longer, 6 achieve 98%
+EPOCHS = 7 # more the better, but longer, 6 achieve 98%
 BATCH_SIZE = 256 #  OK larger is faster, memory limited
 # on MacBook Pro 2.3GHz i7, 16GB 1600MHz DDR3 RAM: 
 # 128 (slowest), 256 (faster), 512 (slower)
 DROPOUT = 0.70 # 0.75
 validation_split = 0.30 # we will use ~20% of TRAIN data for validation
+best_model = "./model_0.884893309667"
 
 
 # 
@@ -349,7 +350,7 @@ def scale_image_color_depth_for_all(image_set):
 
 # ### Histogram Equalization (even out brighness)
 # 
-# Te effect should be that the images with little contrast should be very readable now.
+# The effect should be that the images with little contrast should be very readable now.
 
 # In[16]:
 
@@ -670,7 +671,7 @@ def convolutional_neural_network(tensor):
 
 # ## Dataset and Training
 # 
-# <font color='red'>
+# <font color='Purple'>
 # Student describes how the model was trained and evaluated. If the student generated additional data they discuss their process and reasoning. Additionally, the student discusses the difference between the new dataset with additional data, and the original dataset.
 # </font>
 # 
@@ -708,7 +709,9 @@ print("mean_loss_tensor",mean_loss_tensor)
 
 # #### Question 4 (training, optimizer, batch size, epochs, params)
 # 
+# <font color='Purple'>
 # _How did you train your model? (Type of optimizer, batch size, epochs, hyperparameters, etc.)_
+# </font>
 # 
 # **Answer:**
 # 
@@ -767,7 +770,7 @@ print("predition_mean", predition_mean)
 # In[32]:
 
 def evaluate(X_data, y_data):
-    num_examples = len(X_data) # training_set_size
+    num_examples = len(X_data) 
     total_accuracy = 0
     sess = tf.get_default_session()
     for offset in tqdm(range(0, num_examples, BATCH_SIZE)):
@@ -783,6 +786,8 @@ import time
 start = time.time()
 
 saver = tf.train.Saver()
+vector_accurancies = []
+
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -807,6 +812,7 @@ with tf.Session() as sess:
             
         # at the end of each epoch, evaluate against validation set
         validation_accuracy = evaluate(X_validation, y_validation)
+        vector_accurancies.extend([validation_accuracy])
         print("EPOCH {} ...".format(i+1),
               "Validation Accuracy = {:.3f}".format(validation_accuracy))
         # EPOCH 1 ... Validation Accuracy = 0.300 - very low
@@ -819,15 +825,57 @@ with tf.Session() as sess:
             EPOCHS, BATCH_SIZE, round(end - start,1)))
         
     # upon training complete, save it so we do not have to train again
-    saver.save(sess, './model_00001')
+    # assure to save the model with achieved accuracy,
+    # this way later I can select the best run
+    saver.save(sess, './model_' + str(validation_accuracy))
     print("Model saved")
     
 
 
+# ## Learning accuracy graph
+
+# In[34]:
+
+import matplotlib.pyplot as plt
+plt.plot(vector_accurancies)
+plt.xlabel('EPOCHS')
+plt.ylabel('PERCENTAGE')
+plt.show()
+
+
+# In[35]:
+
+
+
+# Example Run 100 epochs
+vector_accurancies  = [ 0.210, 0.357, 0.419, 0.583, 0.625, 0.633, 0.639, 
+                       0.724, 0.694, 0.705, 0.734, 0.676, 0.747, 0.770, 
+                       0.749, 0.728, 0.803, 0.807, 0.786, 0.760, 0.784, 
+                       0.833, 0.826, 0.826, 0.838, 0.835, 0.789, 0.764, 
+                       0.825, 0.841, 0.847, 0.849, 0.853, 0.851, 0.842, 
+                       0.807, 0.832, 0.760, 0.821, 0.847, 0.849, 0.858, 
+                       0.848, 0.854, 0.857, 0.863, 0.860, 0.861, 0.862, 
+                       0.862, 0.849, 0.714, 0.852, 0.859, 0.841, 0.856, 
+                       0.862, 0.861, 0.864, 0.855, 0.837, 0.847, 0.763, 
+                       0.870, 0.875, 0.873, 0.866, 0.880, 0.877, 0.883, 
+                       0.882, 0.886, 0.885, 0.886, 0.884, 0.886, 0.885, 
+                       0.886, 0.887, 0.886, 0.886, 0.886, 0.886, 0.887, 
+                       0.886, 0.887, 0.887, 0.887, 0.365, 0.827, 0.867, 
+                       0.865, 0.875, 0.882, 0.885, 0.885, 0.885, 0.885, 
+                       0.886, 0.885]
+
+import matplotlib.pyplot as plt
+plt.plot(vector_accurancies)
+plt.xlabel('EPOCHS')
+plt.ylabel('PERCENTAGE')
+plt.show()
+
+
 # ### Question 5
 # 
-# 
+# <font color='Purple'>
 # _What approach did you take in coming up with a solution to this problem? It may have been a process of trial and error, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think this is suitable for the current problem._
+# </font>
 # 
 # **Answer:**
 # 
@@ -870,38 +918,116 @@ with tf.Session() as sess:
 # ---
 # # Evaluate saved model agaist the TEST set
 
-# In[34]:
+# In[36]:
+
+# I will be updating the model name to the HIGHEST accurancy achieved
 
 with tf.Session() as sess:
-    print ('Re-loading saved ./model_00001')
-    saver.restore(sess,   './model_00001')
+    print ('Re-loading saved model' + best_model)
+    saver.restore(sess,   best_model)
 
     test_accuracy = evaluate(X_test, y_test)
-    print("After running the TEST set agaist save model I get = {:.3f}".format(test_accuracy))
+    print("Evaluating the TEST set agaist restored model trained to 88.4%, result = {:.1f}% accurancy".format(test_accuracy*100))
 
 
 # ---
 # 
 # # Test a Model on New Images
 # 
-# Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.
 # 
-# You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name.
 
 # #### Question 6 (choose and describe 5 new images)
 # 
+# <font color='Purple'>
+# Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.
+# 
+# You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name.
+# 
+# 
 # _Choose five candidate images of traffic signs and provide them in the report. Are there any particular qualities of the image(s) that might make classification difficult? It could be helpful to plot the images in the notebook._
+# 
+# </font>
 # 
 # 
 # **Answer**
 # 
-# Yes, some of the images in the training set are not readable to me. The error rate on them, I assume might be high.
+# - I found 7 signs that indicate 23: "Slippery road",
+# - I think they are a VERY IMTERESTING test as each is a little different
+# - I resized each to square
+# - I created a notebook with code to resize whole directory of images, see same folder
+# - I resized each to 32x32 - the QUALITY IS TERRIBLE
+# - Image slip_008_32x32.png is from the TRAINING set to see if it will be guessed
 # 
-# ![title](images/example_5.png)
+# I do not understand why we use such a bad training set of 32x32 images, 
+# it makes sense for characted recognition, but not for signs with important text inside.
+
+# ### Show NEW images (original and resized 32x32)
+
+# In[37]:
+
+directory = "images/verification"
+prepended_by = "slip_"
+
+
+import os
+listing = os.listdir(directory)
+print (len(listing))
+listing[5]
+
+
+# In[38]:
+
+from skimage import io
+import numpy as np
+from matplotlib import pyplot as plt
+ 
+
+# count and display valid images
+counter = 0
+for i in range(len(listing)):
+    if ".jpg" not in listing[i]: 
+        print("ignoring", listing[i])
+        continue
+    if prepended_by not in listing[i]: 
+        print("ignoring", listing[i])
+        continue
+        
+    image = io.imread(directory + "/" + listing[i])
+    plt.figure(figsize=(2,2))
+    plt.imshow(image)
+    plt.show()
+    
+    if "32x32" in listing[i]: 
+        counter = counter + 1
+        
+
+
+# In[39]:
+
+print("counter", counter)      
+image_matrix = np.uint8(np.zeros((counter, 32, 32, 3))) 
+print("image_matrix", image_matrix.shape)
+
+index = -1
+for i in range(len(listing)):
+    if ".jpg" not in listing[i]: 
+        print("ignoring", listing[i])
+        continue
+    if prepended_by not in listing[i]: 
+        print("ignoring", listing[i])
+        continue
+
+    if "32x32" in listing[i]: 
+        image = io.imread(directory + "/" + listing[i])
+        index = index + 1
+        image_matrix[index] = image
+        print("adding", listing[i], "@ index", index)
+image_matrix.shape
+
 
 # #### Question 7 (performance of new images)
 # 
-# <font color='red'>
+# <font color='Purple'>
 # Student documents the performance of the model when tested on the captured images and compares it to the results of testing on the dataset.
 # </font>
 # 
@@ -910,98 +1036,63 @@ with tf.Session() as sess:
 # 
 # _**NOTE:** You could check the accuracy manually by using `signnames.csv` (same directory). This file has a mapping from the class id (0-42) to the corresponding sign name. So, you could take the class id the model outputs, lookup the name in `signnames.csv` and see if it matches the sign from the image._
 # 
-
+# 
 # **Answer:**
+# 
+# - I created image_matrix with 7 of my NEW #23: "Slippery road"
+# - I preprocess them the same way as training set, I got new_images
+# - I created lables (all same): new_labels = [23, 23, 23, 23, 23, 23, 23]
+# - I run evaluate function (test set returned 0.682)
+# - My set of NEW images returned 0% accurancy (disappointing)
+# - I cannot explain this, considering that I had 1 image from training set
 
-# In[35]:
+# In[40]:
 
-import os
-directory = "images/verification/"
-listing = os.listdir(directory)
-print (len(listing))
-listing
-
-
-# In[36]:
-
-from skimage import io
- 
-image_matrix = np.uint8(np.zeros((30, 32, 32, 3))) # I know I have 30 images
-
-counter = -1
-for i in range(len(listing)):
-    if ".jpg" not in listing[i]: 
-        print("ignoring", listing[i])
-        continue
-    counter = counter + 1
-    image_array = io.imread(directory + listing[i])
-    image_matrix[i-1] = image_array
-    print(counter, listing[i])
-    
-    
-image_matrix.shape
-plt.imshow(image_matrix[counter])
+items = len(image_matrix)
+print("Number of new images:", items)
 
 
-# In[37]:
+# 
 
-test_img_data = scale_image_color_depth_for_all(
+# In[41]:
+
+new_images = scale_image_color_depth_for_all(
     image_matrix.reshape((-1, 32, 32, 3)).astype(float))
 
+new_labels =  [23] * items
+print(new_labels)
+human_readable_sign_names(23)
 
-# In[38]:
 
-plt.rcParams["figure.figsize"] = [32, 5]
+# In[42]:
 
- 
-for i in tqdm(range(8)):
-    image = image_matrix[i].squeeze()
-    plt.subplot(1, counter, i + 1)
-    #plt.title(human_readable_sign_names(y_train[index]))
-    plt.imshow(image) # not gray: plt.imshow(image, cmap="gray")
+# I will be updating the model name to the HIGHEST accurancy achieved
+
+with tf.Session() as sess:
+    print ('Re-loading saved model' + best_model)
+    saver.restore(sess,   best_model)
+
+    test_accuracy = evaluate(new_images, new_labels)
+    print("Evaluating the TEST set agaist restored model trained to 88.4%, result = {:.1f}% accurancy".format(test_accuracy*100))
+
+
+# In[ ]:
+
+
 
 
 # #### Question 8 (visualize softmax on new images)
 # 
+# <font color='Purple'>
 # The softmax probabilities of the predictions on the captured images are visualized. The student discusses how certain or uncertain the model is of its predictions.
+# </font>
 # 
-# *Use the model's softmax probabilities to visualize the **certainty** of its predictions, [`tf.nn.top_k`](https://www.tensorflow.org/versions/r0.12/api_docs/python/nn.html#top_k) could prove helpful here. Which predictions is the model certain of? Uncertain? If the model was incorrect in its initial prediction, does the correct prediction appear in the top k? (k should be 5 at most)*
-# 
-# `tf.nn.top_k` will return the values and indices (class ids) of the top k predictions. So if k=3, for each sign, it'll return the 3 largest probabilities (out of a possible 43) and the correspoding class ids.
-# 
-# Take this numpy array as an example:
-# 
-# ```
-# # (5, 6) array
-# a = np.array([[ 0.24879643,  0.07032244,  0.12641572,  0.34763842,  0.07893497,
-#          0.12789202],
-#        [ 0.28086119,  0.27569815,  0.08594638,  0.0178669 ,  0.18063401,
-#          0.15899337],
-#        [ 0.26076848,  0.23664738,  0.08020603,  0.07001922,  0.1134371 ,
-#          0.23892179],
-#        [ 0.11943333,  0.29198961,  0.02605103,  0.26234032,  0.1351348 ,
-#          0.16505091],
-#        [ 0.09561176,  0.34396535,  0.0643941 ,  0.16240774,  0.24206137,
-#          0.09155967]])
-# ```
-# 
-# Running it through `sess.run(tf.nn.top_k(tf.constant(a), k=3))` produces:
-# 
-# ```
-# TopKV2(values=array([[ 0.34763842,  0.24879643,  0.12789202],
-#        [ 0.28086119,  0.27569815,  0.18063401],
-#        [ 0.26076848,  0.23892179,  0.23664738],
-#        [ 0.29198961,  0.26234032,  0.16505091],
-#        [ 0.34396535,  0.24206137,  0.16240774]]), indices=array([[3, 0, 5],
-#        [0, 1, 4],
-#        [0, 5, 1],
-#        [1, 3, 5],
-#        [1, 4, 3]], dtype=int32))
-# ```
-# 
-# Looking just at the first row we get `[ 0.34763842,  0.24879643,  0.12789202]`, you can confirm these are the 3 largest probabilities in `a`. You'll also notice `[3, 0, 5]` are the corresponding indices.
+# ** Answer: **
+# - Predition is totally misleading
+# - For some there is 100%, for other 20%
+# - It is hard to draw any conclusion
 
-# In[39]:
+# In[49]:
 
 softmax_tensor = tf.nn.softmax(logits)
 
@@ -1011,23 +1102,34 @@ def classify_images(X_data):
     return predicted_tensor
     
 with tf.Session() as sess:
-    print ('Re-loading saved ./model_00001')
-    saver.restore(sess,   './model_00001')
+    print ('Re-loading saved model' + best_model)
+    saver.restore(sess,   best_model)
     
-    predictions = classify_images(test_img_data)
+    predictions = classify_images(new_images)
     top_k_tensor = sess.run(tf.nn.top_k(predictions, 5, sorted=True))
     label_indexes = np.argmax(top_k_tensor, 1)
-    #print("Predicted Labels:", label_indexes)
 
-values=  label_indexes[1,1:]  
-print (values)
+values = label_indexes[1,1:]  
+
 for index in tqdm(range(len(values))):
-    print(human_readable_sign_names(values[index]))
+    print(human_readable_sign_names(values[index]), values[index])
 
 
-# In[ ]:
+# In[47]:
 
+### Visualize the softmax probabilities
+top = 5
 
+for i in range(top):
+    predictions = top_k_tensor[0][i]
+    plt.title('Top {} Softmax probabilities for option {}'.format(top, str(i)))
+    plt.figure(i)
+    plt.xlabel('label #')
+    plt.ylabel('prediction')
+    plt.bar(range(top), predictions, 0.10, color='b')
+    plt.xticks(np.arange(top) + 0.10, tuple(predictions))
+
+plt.show()
 
 
 # > **Note**: Once you have completed all of the code implementations and successfully answered each question above, you may finalize your work by exporting the iPython Notebook as an HTML document. You can do this by using the menu above and navigating to  \n",
@@ -1040,3 +1142,7 @@ for index in tqdm(range(len(values))):
 // This updates Table of Contents section on top, run on the bottom of the notebook
 %%javascript
 $.getScript('https://kmahelona.github.io/ipython_notebook_goodies/ipython_notebook_toc.js')
+# In[ ]:
+
+
+
