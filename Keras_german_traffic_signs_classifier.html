@@ -11764,32 +11764,254 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">DLProgress</span><span class="p">(</span><span class="n">tqdm</span><span class="p">):</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># This is a wrapper class to show the progrees of the download.</span>
+<span class="k">class</span> <span class="nc">DownloadProgress</span><span class="p">(</span><span class="n">tqdm</span><span class="p">):</span>
     <span class="n">last_block</span> <span class="o">=</span> <span class="mi">0</span>
 
+    <span class="c1"># This hook function that will be called: </span>
+    <span class="c1"># - once on establishment of the network connection and </span>
+    <span class="c1"># - once after each block read thereafter. </span>
+    <span class="c1"># The hook will receive three arguments: </span>
+    <span class="c1"># - a count of blocks transferred so far, </span>
+    <span class="c1"># - a block size in bytes, and </span>
+    <span class="c1"># - the total size of the file.</span>
     <span class="k">def</span> <span class="nf">hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_num</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">total_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">total</span> <span class="o">=</span> <span class="n">total_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">((</span><span class="n">block_num</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_block</span><span class="p">)</span> <span class="o">*</span> <span class="n">block_size</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_block</span> <span class="o">=</span> <span class="n">block_num</span>
+</pre></div>
 
-<span class="k">if</span> <span class="ow">not</span> <span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;train.p&#39;</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">DLProgress</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">miniters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Train Dataset&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># urllib.request.urlretrieve(url[, filename[, reporthook[, data]]])</span>
+
+<span class="c1"># I usually keep my DATA one folder below the git repo</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="s2">&quot;../DATA/german_traffic_signs/&quot;</span>
+
+<span class="n">file_name</span> <span class="o">=</span> <span class="s1">&#39;train.p&#39;</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">isfile</span><span class="p">(</span><span class="n">data_dir</span> <span class="o">+</span> <span class="n">file_name</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">DownloadProgress</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">miniters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Train Dataset&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
         <span class="n">urlretrieve</span><span class="p">(</span>
             <span class="s1">&#39;https://s3.amazonaws.com/udacity-sdc/datasets/german_traffic_sign_benchmark/train.p&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;train.p&#39;</span><span class="p">,</span>
+            <span class="n">data_dir</span> <span class="o">+</span> <span class="n">file_name</span><span class="p">,</span>
             <span class="n">pbar</span><span class="o">.</span><span class="n">hook</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="ow">not</span> <span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;test.p&#39;</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">DLProgress</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">miniters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Test Dataset&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+        
+<span class="n">file_name</span> <span class="o">=</span> <span class="s1">&#39;test.p&#39;</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">isfile</span><span class="p">(</span><span class="n">data_dir</span> <span class="o">+</span> <span class="n">file_name</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">DownloadProgress</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">miniters</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Test Dataset&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
         <span class="n">urlretrieve</span><span class="p">(</span>
             <span class="s1">&#39;https://s3.amazonaws.com/udacity-sdc/datasets/german_traffic_sign_benchmark/test.p&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;test.p&#39;</span><span class="p">,</span>
+            <span class="n">data_dir</span> <span class="o">+</span> <span class="n">file_name</span><span class="p">,</span>
             <span class="n">pbar</span><span class="o">.</span><span class="n">hook</span><span class="p">)</span>
+        
+        
+<span class="c1"># Train Dataset: 120MB [01:20, 1.50MB/s]                           </span>
+<span class="c1"># Test Dataset: 38.8MB [00:28, 1.37MB/s]  </span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Training and Test data downloaded.&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Training and Test data downloaded at &#39;</span> <span class="o">+</span> <span class="n">data_dir</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Training and Test data downloaded at ../DATA/german_traffic_signs/
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="c1"># Switch Keras to TensorFlow (from Theano)</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">control_flow_ops</span> <span class="o">=</span> <span class="n">tf</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Modules loaded.&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Modules loaded.
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_dir</span> <span class="o">+</span> <span class="s1">&#39;train.p&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="c1"># TODO: Load the feature data to the variable X_train</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]</span>
+<span class="c1"># TODO: Load the label data to the variable y_train</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span>
+
+<span class="c1"># Assert that the data sets loaded correctly</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]),</span> <span class="s1">&#39;X_train not set to data[</span><span class="se">\&#39;</span><span class="s1">features</span><span class="se">\&#39;</span><span class="s1">].&#39;</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]),</span> <span class="s1">&#39;y_train not set to data[</span><span class="se">\&#39;</span><span class="s1">labels</span><span class="se">\&#39;</span><span class="s1">].&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Training data sets are loaded correctly&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Training data sets are loaded correctly
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="k">import</span> <span class="n">shuffle</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">shuffle</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span> 
+
+<span class="k">assert</span> <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s1">&#39;X_train has changed shape. The shape shouldn</span><span class="se">\&#39;</span><span class="s1">t change when shuffling.&#39;</span>
+<span class="k">assert</span> <span class="n">y_train</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s1">&#39;y_train has changed shape. The shape shouldn</span><span class="se">\&#39;</span><span class="s1">t change when shuffling.&#39;</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]),</span> <span class="s1">&#39;X_train not shuffled.&#39;</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]),</span> <span class="s1">&#39;y_train not shuffled.&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tests passed.&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Tests passed.
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">normalize_color_intensity</span><span class="p">(</span><span class="n">image_data</span><span class="p">):</span>
+    <span class="c1"># desired range</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="c1"># expected values</span>
+    <span class="n">grayscale_min</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">grayscale_max</span> <span class="o">=</span> <span class="mi">255</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="p">(</span><span class="n">image_data</span> <span class="o">-</span> <span class="n">grayscale_min</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="p">)</span><span class="o">/</span><span class="p">(</span> <span class="n">grayscale_max</span> <span class="o">-</span> <span class="n">grayscale_min</span> <span class="p">)</span> <span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">X_normalized</span> <span class="o">=</span> <span class="n">normalize_color_intensity</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_text output_error">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">MemoryError</span>                               Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-16-dd2dde112668&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>X_normalized <span class="ansi-blue-fg">=</span> normalize_color_intensity<span class="ansi-blue-fg">(</span>X_train<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">&lt;ipython-input-15-512810abdced&gt;</span> in <span class="ansi-cyan-fg">normalize_color_intensity</span><span class="ansi-blue-fg">(image_data)</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span>     grayscale_min <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">0</span>
+<span class="ansi-green-intense-fg ansi-bold">      7</span>     grayscale_max <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">255</span>
+<span class="ansi-green-fg">----&gt; 8</span><span class="ansi-red-fg">     </span><span class="ansi-green-fg">return</span> a <span class="ansi-blue-fg">+</span> <span class="ansi-blue-fg">(</span> <span class="ansi-blue-fg">(</span> <span class="ansi-blue-fg">(</span>image_data <span class="ansi-blue-fg">-</span> grayscale_min<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">*</span><span class="ansi-blue-fg">(</span>b <span class="ansi-blue-fg">-</span> a<span class="ansi-blue-fg">)</span> <span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">/</span><span class="ansi-blue-fg">(</span> grayscale_max <span class="ansi-blue-fg">-</span> grayscale_min <span class="ansi-blue-fg">)</span> <span class="ansi-blue-fg">)</span>
+
+<span class="ansi-red-fg">MemoryError</span>: </pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
 </pre></div>
 
 </div>
